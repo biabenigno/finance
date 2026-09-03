@@ -6,8 +6,9 @@ from app.modules.invoices.schemas import (
     ToggleIgnoreResponse,
     TransactionResponse,
     CategorySummaryResponse,
-    CategorySummaryItem
-)  # <-- Adicionado o ')' aqui
+    CategorySummaryItem,
+    CardResponse  # <-- Importação adicionada
+)
 
 class InvoiceService:
     def __init__(self):
@@ -69,7 +70,7 @@ class InvoiceService:
                     category_id=tx.get("category_id"),
                     category_name=cat_data.get("description") or "Outros",
                     category_color=cat_data.get("color") or "#94a3b8",
-                    is_ignored=tx.get("is_ignored", False)  # <-- Mapeamento
+                    is_ignored=tx.get("is_ignored", False)
                 )
             )
         return resultado
@@ -82,7 +83,6 @@ class InvoiceService:
     ) -> CategorySummaryResponse:
         transacoes_brutas = self.obter_transacoes(user_id, bill_id, card_id)
         
-        # 1. Filtra pagamentos de fatura (ID '05100000') E transações desconsideradas pelo usuário (is_ignored == True)
         transacoes = [
             tx for tx in transacoes_brutas 
             if tx.category_id != "05100000" and not tx.is_ignored
@@ -141,4 +141,29 @@ class InvoiceService:
             id=transaction_id,
             is_ignored=is_ignored,
             message=f"Transação {status_msg} com sucesso."
+        )
+
+    def obter_cartoes(self) -> List[CardResponse]:
+        raw_cards = self.repository.listar_cartoes()
+        return [
+            CardResponse(
+                id=c["id"],
+                bank_name=c.get("bank_name") or "Cartão sem nome",
+                pluggy_account_id=c.get("pluggy_account_id"),
+                item_id=c.get("item_id"),
+                created_at=c.get("created_at")
+            )
+            for c in raw_cards
+        ]
+
+    def renomear_cartao(self, card_id: str, novo_nome: str) -> CardResponse:
+        card_atualizado = self.repository.atualizar_nome_cartao(card_id, novo_nome)
+        if not card_atualizado:
+            raise ValueError("Cartão não encontrado.")
+        return CardResponse(
+            id=card_atualizado["id"],
+            bank_name=card_atualizado["bank_name"],
+            pluggy_account_id=card_atualizado.get("pluggy_account_id"),
+            item_id=card_atualizado.get("item_id"),
+            created_at=card_atualizado.get("created_at")
         )
