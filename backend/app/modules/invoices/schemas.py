@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import List, Optional, Union
 from datetime import datetime, date
 
-# 1. Faturas (Bills)
 class BillResponse(BaseModel):
     id: str
     card_id: str
@@ -11,7 +10,6 @@ class BillResponse(BaseModel):
     due_date: date
     total_amount: float
 
-# 2. Categorias
 class CategoryResponse(BaseModel):
     id: str
     description: str
@@ -19,7 +17,6 @@ class CategoryResponse(BaseModel):
     color: str
     parent_id: Optional[str] = None
 
-# 3. Transações
 class TransactionResponse(BaseModel):
     id: str
     description: str
@@ -39,7 +36,6 @@ class ToggleIgnoreResponse(BaseModel):
     is_ignored: bool
     message: str
 
-# 4. Resumo de Gastos por Categoria
 class CategorySummaryItem(BaseModel):
     category_id: str
     category_name: str
@@ -54,13 +50,21 @@ class CategorySummaryResponse(BaseModel):
     total_bill: float
     categories: List[CategorySummaryItem]
 
-# 5. Cartões e Conexões
 class CardResponse(BaseModel):
     id: Union[int, str]
+    card_name: str
     bank_name: str
     pluggy_account_id: Optional[str] = None
     item_id: Optional[Union[int, str]] = None
     created_at: Optional[datetime] = None
 
-class CardUpdateName(BaseModel):
+class CardUpdate(BaseModel):
+    card_name: Optional[str] = None
+    bank_name: Optional[str] = None
+
+class CardCreate(BaseModel):
+    card_name: str
     bank_name: str
+    user_id: Optional[str] = "d262bc6c-d58b-4f4e-99b4-505202b646ba"
+    pluggy_account_id: Optional[str] = None
+    pluggy_item_id: Optional[str] = None

@@ -4,92 +4,90 @@ import { renderChart } from '../../components/charts.js';
 
 const USER_ID = 'd262bc6c-d58b-4f4e-99b4-505202b646ba';
 let resumoCategoriasAtuais = [];
-let bancoFiltro = ''; // <-- Declaração da variável no escopo do módulo
+let bancoFiltro = '';
+let cardIdFiltro = '';
 
 async function init() {
-    // 1. Lê parâmetro 'banco' da URL (ex: ?banco=Santander)
     const urlParams = new URLSearchParams(window.location.search);
+    cardIdFiltro = urlParams.get('card_id') || '';
     bancoFiltro = urlParams.get('banco') || '';
 
-    // 2. Renderiza Topbar dinâmica (aguarda a busca dos cartões)
     await renderHeader('invoices');
 
-    // 3. Atualiza o título da página
     const tituloEl = document.getElementById('titulo-pagina-fatura');
     if (tituloEl) {
         tituloEl.textContent = bancoFiltro ? `Fatura ${bancoFiltro}` : 'Total Cartões';
     }
 
-    await carregarOpcoesMeses();
+    await carregarOpcoesFaturas();
     await carregarDados();
 
-    document.getElementById('filtro-mes')?.addEventListener('change', carregarDados);
+    document.getElementById('filtro-fatura')?.addEventListener('change', carregarDados);
 }
 
-async function carregarOpcoesMeses() {
+async function carregarOpcoesFaturas() {
     try {
-        const faturas = await apiRequest(`/invoices/bills?user_id=${USER_ID}`);
-        const select = document.getElementById('filtro-mes');
+        const select = document.getElementById('filtro-fatura');
         if (!select) return;
 
-        const mesesSet = new Set(faturas.map(f => f.due_date ? f.due_date.slice(0, 7) : ''));
+        const endpointFaturas = cardIdFiltro 
+            ? `/invoices/bills?user_id=${USER_ID}&card_id=${cardIdFiltro}` 
+            : `/invoices/bills?user_id=${USER_ID}`;
+            
+        const faturas = await apiRequest(endpointFaturas);
+
+        const mesesSet = new Set();
+        faturas.forEach(f => {
+            if (f.due_date) mesesSet.add(f.due_date.slice(0, 7));
+        });
+
         const mesesOrdenados = Array.from(mesesSet).filter(Boolean).sort().reverse();
 
-        select.innerHTML = '<option value="">Todas as Faturas</option>';
+        let html = '<option value="atual">Fatura em Aberto (Atual)</option>';
         mesesOrdenados.forEach(mes => {
             const [ano, num] = mes.split('-');
             const dataData = new Date(Number(ano), Number(num) - 1, 1);
             const nomeMes = dataData.toLocaleString('pt-BR', { month: 'long' });
             const nomeFormatado = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
 
-            const opt = document.createElement('option');
-            opt.value = mes;
-            opt.textContent = `${nomeFormatado} ${ano}`;
-            select.appendChild(opt);
+            html += `<option value="${mes}">${nomeFormatado} ${ano}</option>`;
         });
+
+        select.innerHTML = html;
     } catch (err) {
-        console.error('Erro ao carregar faturas:', err);
+        console.error('Erro ao carregar opções de faturas:', err);
     }
 }
 
 async function carregarDados() {
-    const selectMes = document.getElementById('filtro-mes');
-    const mesSelecionado = selectMes ? selectMes.value : '';
+    const selectFatura = document.getElementById('filtro-fatura');
+    const faturaSelecionada = selectFatura ? selectFatura.value : 'atual';
 
     try {
-        let transacoes = await apiRequest(`/invoices/transactions?user_id=${USER_ID}`);
+        let endpointTxs = `/invoices/transactions?user_id=${USER_ID}&fatura=${encodeURIComponent(faturaSelecionada)}`;
+        let endpointResumo = `/invoices/categories-summary?user_id=${USER_ID}&fatura=${encodeURIComponent(faturaSelecionada)}`;
 
-        // Filtro por Mês
-        if (mesSelecionado) {
-            transacoes = transacoes.filter(tx => tx.date && tx.date.startsWith(mesSelecionado));
+        if (cardIdFiltro) {
+            endpointTxs += `&card_id=${encodeURIComponent(cardIdFiltro)}`;
+            endpointResumo += `&card_id=${encodeURIComponent(cardIdFiltro)}`;
         }
 
-        // Filtro por Banco
-        if (bancoFiltro) {
-            transacoes = transacoes.filter(tx => 
-                tx.bank_name && tx.bank_name.toLowerCase().includes(bancoFiltro.toLowerCase())
-            );
-        }
-
+        const transacoes = await apiRequest(endpointTxs);
         renderTransacoes(transacoes);
 
-        const resumo = await apiRequest(`/invoices/categories-summary?user_id=${USER_ID}`);
-        
-        // Recalcula o total conforme os filtros aplicados
-        const totalCalculado = transacoes
-            .filter(tx => tx.category_id !== "05100000" && !tx.is_ignored)
-            .reduce((acc, tx) => acc + tx.amount, 0);
+        const resumo = await apiRequest(endpointResumo);
 
         const valorEl = document.getElementById('valor-total');
         if (valorEl) {
-            valorEl.innerText = Number(totalCalculado).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const totalFatura = resumo.total_bill || 0;
+            valorEl.innerText = Number(totalFatura).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
         }
 
         resumoCategoriasAtuais = resumo.categories || [];
         renderChart('chartCategorias', resumoCategoriasAtuais);
 
     } catch (err) {
-        console.error('Erro ao carregar dados:', err);
+        console.error('Erro ao carregar dados do dashboard:', err);
     }
 }
 
@@ -101,15 +99,15 @@ function renderTransacoes(transacoes) {
     if (contador) contador.innerText = `${transacoes.length} itens`;
 
     if (!transacoes || transacoes.length === 0) {
-        container.innerHTML = '<p class="text-center text-slate-400 text-xs py-10">Nenhum lançamento encontrado.</p>';
+        container.innerHTML = '<p class="text-center text-slate-400 text-xs py-10">Nenhum lançamento encontrado para esta fatura.</p>';
         return;
     }
 
     container.innerHTML = transacoes.map(tx => {
-        const banco = tx.bank_name || 'Cartão';
+        const banco = tx.bank_name || tx.card_name || 'Cartão';
         const isInter = banco.toLowerCase().includes('inter');
         const isSantander = banco.toLowerCase().includes('santander');
-        
+
         const bancoBadgeClass = isInter 
             ? 'bg-orange-50 text-orange-600 border-orange-200' 
             : isSantander 
@@ -168,7 +166,7 @@ window.abrirModalCategoria = () => {
                                     </button>
                                     <div class="truncate">
                                         <p class="font-medium text-slate-800 ${tx.is_ignored ? 'line-through' : ''} truncate">${tx.description}</p>
-                                        <p class="text-[10px] text-slate-400">${new Date(tx.date).toLocaleDateString('pt-BR')} • ${tx.bank_name}</p>
+                                        <p class="text-[10px] text-slate-400">${new Date(tx.date).toLocaleDateString('pt-BR')} • ${tx.bank_name || tx.card_name}</p>
                                     </div>
                                 </div>
                                 <span class="font-semibold ${tx.amount < 0 ? 'text-emerald-600' : 'text-slate-700'} shrink-0">
@@ -201,5 +199,7 @@ window.toggleIgnore = async (id, isIgnored, fromModal = false) => {
         console.error('Erro ao alternar transação:', err);
     }
 };
+
+window.carregarDados = carregarDados;
 
 document.addEventListener('DOMContentLoaded', init);

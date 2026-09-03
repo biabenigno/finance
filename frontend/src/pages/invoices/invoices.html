@@ -11,14 +11,13 @@
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
 
-    <!-- Header injetado dinamicamente -->
     <div id="header-container"></div>
 
     <main class="max-w-6xl mx-auto p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4">
             <div>
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Cartões</span>
+                    <span id="titulo-pagina-fatura" class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Cartões</span>
                     <button id="btn-censura" class="text-slate-400 hover:text-slate-600 transition">
                         <span id="icone-olho" class="material-symbols-outlined text-base">visibility</span>
                     </button>
@@ -29,13 +28,13 @@
                 </div>
             </div>
 
-            <select id="filtro-fatura" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl p-2.5 px-4 outline-none shadow-sm">
-                <option value="">Fatura em Aberto (Atual)</option>
+            <!-- Filtro de Fatura / Mês -->
+            <select id="filtro-fatura" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl p-2.5 px-4 outline-none shadow-sm cursor-pointer hover:bg-slate-50 transition">
+                <option value="atual">Fatura em Aberto (Atual)</option>
             </select>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Esquerda: Lançamentos -->
             <div class="card-financeiro p-0 h-[560px] flex flex-col">
                 <div class="px-6 py-4 bg-slate-50 rounded-t-[14px] border-b border-slate-100 flex justify-between items-center">
                     <h3 class="font-semibold text-slate-700 text-sm">Lançamentos</h3>
@@ -44,7 +43,6 @@
                 <div id="lista-transacoes" class="p-2 overflow-y-auto flex-1"></div>
             </div>
 
-            <!-- Direita: Gráfico por Categoria (Altura total de 560px) -->
             <div class="card-financeiro p-6 h-[560px] flex flex-col">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0 mb-4">
                     <div class="flex items-center gap-2">
@@ -54,8 +52,7 @@
                         </button>
                     </div>
                 </div>
-                
-                <!-- Área estendida para o Gráfico ocupar 100% da altura restante -->
+
                 <div id="chart-container" class="relative flex-1 w-full min-h-0">
                     <canvas id="chartCategorias"></canvas>
                 </div>
@@ -63,7 +60,6 @@
         </div>
     </main>
 
-    <!-- Modal: Detalhamento por Categoria -->
     <div id="modal-categoria" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl p-6 max-h-[85vh] flex flex-col">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
@@ -75,11 +71,7 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-
-            <div id="modal-categoria-lista" class="overflow-y-auto flex-1 my-3 space-y-4 pr-1">
-                <!-- Preenchido via JS -->
-            </div>
-
+            <div id="modal-categoria-lista" class="overflow-y-auto flex-1 my-3 space-y-4 pr-1"></div>
             <div class="pt-3 border-t border-slate-100 text-right shrink-0">
                 <button onclick="window.fecharModalCategoria()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition">
                     Fechar
