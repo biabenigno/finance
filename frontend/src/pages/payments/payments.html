@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamentos - Finanças</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="../../../assets/css/global.css">
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+    <div id="header-container"></div>
+
+    <main class="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+        <!-- Cabeçalho da Página -->
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Contas Fixas</p>
+                <h1 class="text-2xl font-bold text-slate-800 mt-1">Pagamentos</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <select id="pagamentos-mes" class="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl p-2.5 px-4 shadow-sm outline-none cursor-pointer hover:bg-slate-50 transition">
+                </select>
+                <button type="button" onclick="window.abrirNovoPagamento()" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition shadow-sm">
+                    <span class="material-symbols-outlined text-base">add</span> Nova conta
+                </button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="card-financeiro p-4">
+                <p class="text-xs sm:text-sm text-slate-500">Total de contas</p>
+                <strong id="kpi-contas" class="block text-lg sm:text-2xl text-slate-800 mt-1 truncate">R$ 0,00</strong>
+            </div>
+            <div class="card-financeiro p-4">
+                <p class="text-xs sm:text-sm text-slate-500">Em aberto</p>
+                <strong id="kpi-aberto" class="block text-lg sm:text-2xl text-amber-700 mt-1 truncate">R$ 0,00</strong>
+            </div>
+            <div class="card-financeiro p-4">
+                <p class="text-xs sm:text-sm text-slate-500">Pago</p>
+                <strong id="kpi-pago" class="block text-lg sm:text-2xl text-emerald-700 mt-1 truncate">R$ 0,00</strong>
+            </div>
+            <div class="card-financeiro p-4">
+                <p class="text-xs sm:text-sm text-slate-500">Em atraso</p>
+                <strong id="kpi-atraso" class="block text-lg sm:text-2xl text-rose-700 mt-1 truncate">R$ 0,00</strong>
+            </div>
+        </div>
+
+        <!-- Seção Principal (Lista + Gráfico) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <section class="card-financeiro p-5 lg:col-span-2">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                    <h2 class="font-semibold text-slate-800 text-sm">Contas do período</h2>
+                    <span class="text-xs text-slate-400">Pendências anteriores aparecem primeiro</span>
+                </div>
+                <div id="lista-pagamentos" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </section>
+
+            <section class="card-financeiro p-5">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                    <h2 class="font-semibold text-slate-800 text-sm">Previsto vs Realizado</h2>
+                    <span class="text-xs text-slate-400" id="grafico-historico-ano"></span>
+                </div>
+                <div class="relative w-full h-[320px]">
+                    <canvas id="chart-pagamentos-historico"></canvas>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal Novo / Editar Pagamento -->
+    <div id="payment-modal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <form id="payment-form" class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+                <h2 id="payment-modal-title" class="font-bold text-slate-800 text-base">Nova conta recorrente</h2>
+                <button type="button" onclick="window.fecharModalPagamento()" class="p-1 text-slate-400 hover:text-slate-700 rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <input type="hidden" id="payment-expense-id">
+            <input type="hidden" id="payment-monthly-id">
+
+            <div class="space-y-4">
+                <div class="payment-contract-field">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nome da conta *</label>
+                    <input id="payment-name" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
+                </div>
+                <div class="payment-contract-field">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descrição</label>
+                    <input id="payment-description" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Valor *</label>
+                    <input id="payment-amount" type="number" min="0.01" step="0.01" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
+                </div>
+                <div class="payment-contract-field">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoria</label>
+                    <input type="hidden" id="payment-category">
+                    <select id="payment-category-select" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none bg-white font-medium text-slate-700">
+                        <option value="">Carregando categorias...</option>
+                    </select>
+                </div>
+                <div class="payment-contract-field">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Dia do Vencimento *</label>
+                    <input id="payment-due-day" type="number" min="1" max="31" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
+                </div>
+                <div class="payment-contract-field grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Parcela atual <span class="text-[11px] font-normal text-slate-400">(opcional)</span></label>
+                        <input id="payment-start-installment" type="number" min="1" placeholder="Ex.: 5" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Total de parcelas <span class="text-[11px] font-normal text-slate-400">(opcional)</span></label>
+                        <input id="payment-total-installments" type="number" min="1" placeholder="Ex.: 40" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+                <button id="btn-excluir-conta" type="button" onclick="window.abrirModalConfirmacaoExclusao()" class="hidden px-3 py-2 text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition inline-flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-lg">delete</span> Excluir conta
+                </button>
+                <div class="flex justify-end gap-2 ml-auto">
+                    <button type="button" onclick="window.fecharModalPagamento()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-medium text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition">Salvar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div id="confirm-delete-modal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                <span class="material-symbols-outlined text-2xl">delete_forever</span>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Excluir conta fixa</h3>
+            <p id="confirm-delete-message" class="text-xs text-slate-600 mb-6 leading-relaxed"></p>
+            <div class="flex items-center justify-center gap-3">
+                <button type="button" onclick="window.fecharModalConfirmacaoExclusao()" class="w-full py-2.5 px-4 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition border border-slate-200">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-confirmar-exclusao-acao" onclick="window.executarExclusaoContaConfirmada()" class="w-full py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition shadow-sm">
+                    Sim, excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./payments.js"></script>
+</body>
+</html>

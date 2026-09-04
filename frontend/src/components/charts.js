@@ -33,3 +33,60 @@ export function renderChart(canvasId, categorias) {
         }
     });
 }
+
+let paymentHistoryChartInstance = null;
+
+export function renderPaymentHistoryChart(canvasId, dados) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    if (paymentHistoryChartInstance) {
+        paymentHistoryChartInstance.destroy();
+        paymentHistoryChartInstance = null;
+    }
+
+    const primeiroMesComDados = dados.findIndex(d => Number(d.previsto || 0) !== 0 || Number(d.realizado || 0) !== 0);
+    const dadosVisiveis = primeiroMesComDados >= 0 ? dados.slice(primeiroMesComDados) : dados;
+
+    paymentHistoryChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: dadosVisiveis.map(d => d.mes),
+            datasets: [
+                {
+                    label: 'Previsto',
+                    data: dadosVisiveis.map(d => d.previsto),
+                    backgroundColor: 'rgba(56, 114, 238, 0.75)',
+                    borderRadius: 5,
+                    borderSkipped: false,
+                    order: 2
+                },
+                {
+                    label: 'Realizado',
+                    type: 'line',
+                    data: dadosVisiveis.map(d => d.realizado),
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#f97316',
+                    pointRadius: 4,
+                    tension: 0.35,
+                    fill: false,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
