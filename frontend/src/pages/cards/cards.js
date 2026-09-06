@@ -2,10 +2,22 @@ import { apiRequest } from '../../core/api.js';
 import { renderHeader } from '../../components/header.js';
 
 let cartoesEncontradosPluggy = [];
+let cartaoIdParaExcluir = null;
 
 async function init() {
     await renderHeader('cards');
+    configurarEventosExclusaoCartao();
     await carregarCartoes();
+}
+
+function configurarEventosExclusaoCartao() {
+    document.getElementById('btn-abrir-exclusao-cartao')?.addEventListener('click', () => {
+        window.fecharModalEdicao();
+        window.abrirModalExclusaoCartao(
+            document.getElementById('card-id-edit').value,
+            encodeURIComponent(document.getElementById('card-name-input').value)
+        );
+    });
 }
 
 async function carregarCartoes() {
@@ -64,6 +76,57 @@ async function carregarCartoes() {
         container.innerHTML = `<p class="text-rose-500 text-sm py-10 col-span-full text-center">Falha ao carregar dados: ${err.message}</p>`;
     }
 }
+
+window.abrirModalExclusaoCartao = (id, nomeCartaoCodificado) => {
+    cartaoIdParaExcluir = id;
+    const nomeEl = document.getElementById('nome-cartao-excluir');
+    if (nomeEl) nomeEl.textContent = decodeURIComponent(nomeCartaoCodificado);
+    document.getElementById('resultado-exclusao-cartao')?.classList.add('hidden');
+    document.getElementById('btn-confirmar-deletar-cartao')?.classList.remove('hidden');
+    const btnCancelar = document.getElementById('btn-cancelar-exclusao-cartao');
+    if (btnCancelar) btnCancelar.textContent = 'Cancelar';
+    document.getElementById('modal-confirmar-exclusao-cartao')?.classList.remove('hidden');
+};
+
+window.fecharModalExclusaoCartao = () => {
+    cartaoIdParaExcluir = null;
+    document.getElementById('resultado-exclusao-cartao')?.classList.add('hidden');
+    document.getElementById('btn-confirmar-deletar-cartao')?.classList.remove('hidden');
+    const btnCancelar = document.getElementById('btn-cancelar-exclusao-cartao');
+    if (btnCancelar) btnCancelar.textContent = 'Cancelar';
+    document.getElementById('modal-confirmar-exclusao-cartao')?.classList.add('hidden');
+};
+
+window.executarExclusaoCartao = async () => {
+    if (!cartaoIdParaExcluir) return;
+
+    const btn = document.getElementById('btn-confirmar-deletar-cartao');
+    try {
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Excluindo...';
+        }
+
+        const resultado = await apiRequest(`/invoices/cards/${cartaoIdParaExcluir}`, 'DELETE');
+        const quantidade = resultado.transacoes_deletadas || 0;
+        const resultadoEl = document.getElementById('resultado-exclusao-cartao');
+        if (resultadoEl) {
+            resultadoEl.textContent = `${quantidade} transação(ões) foram deletadas com sucesso. O cartão também foi removido.`;
+            resultadoEl.classList.remove('hidden');
+        }
+        document.getElementById('btn-confirmar-deletar-cartao')?.classList.add('hidden');
+        const btnCancelar = document.getElementById('btn-cancelar-exclusao-cartao');
+        if (btnCancelar) btnCancelar.textContent = 'Fechar';
+        await carregarCartoes();
+    } catch (err) {
+        alert(`Erro ao excluir cartão: ${err.message}`);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Sim, excluir tudo';
+        }
+    }
+};
 
 // Funções de Edição
 window.abrirModalEdicao = (id, nomeCartao, nomeBanco) => {

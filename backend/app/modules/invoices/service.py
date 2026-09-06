@@ -157,6 +157,16 @@ class InvoiceService:
             created_at=card_atualizado.get("created_at")
         )
 
+    def excluir_cartao(self, card_id: str) -> dict:
+        resultado = self.repository.deletar_cartao_e_dependencias(card_id)
+        if not resultado or not resultado["deleted"]:
+            raise ValueError("Cartão não encontrado ou falha ao excluir.")
+        return {
+            "status": "sucesso",
+            "mensagem": "Cartão e transações excluídos com sucesso.",
+            "transacoes_deletadas": resultado["deleted_transactions"],
+        }
+
     def criar_cartao(self, payload: CardCreate) -> CardResponse:
         card_novo = self.repository.criar_cartao(
             card_name=payload.card_name,

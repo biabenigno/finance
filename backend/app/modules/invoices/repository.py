@@ -116,6 +116,35 @@ class InvoiceRepository:
         return res_final.data[0] if res_final.data else None
 
     @staticmethod
+    def deletar_cartao_e_dependencias(card_id: str) -> Optional[dict]:
+        res_card = supabase.table("cards").select("item_id").eq("id", card_id).execute()
+        if not res_card.data:
+            return None
+
+        item_id = res_card.data[0].get("item_id")
+        res_txs = supabase.table("transactions").select("id").eq("card_id", card_id).execute()
+        tx_ids = [transaction["id"] for transaction in (res_txs.data or [])]
+
+        if tx_ids:
+            supabase.table("card_splits").delete().in_("transaction_id", tx_ids).execute()
+
+        supabase.table("transactions").delete().eq("card_id", card_id).execute()
+        deleted_transactions = len(tx_ids)
+        supabase.table("bills").delete().eq("card_id", card_id).execute()
+
+        res_del = supabase.table("cards").delete().eq("id", card_id).execute()
+
+        if item_id:
+            res_other_cards = supabase.table("cards").select("id").eq("item_id", item_id).execute()
+            if not res_other_cards.data:
+                supabase.table("items").delete().eq("id", item_id).execute()
+
+        return {
+            "deleted": bool(res_del.data),
+            "deleted_transactions": deleted_transactions,
+        }
+
+    @staticmethod
     def criar_cartao(card_name: str, bank_name: str, user_id: str, pluggy_account_id: Optional[str] = None, pluggy_item_id: Optional[str] = None) -> dict:
         pluggy_item = pluggy_item_id or f"manual_{bank_name.lower().replace(' ', '_')}"
         item_res = supabase.table("items").upsert({

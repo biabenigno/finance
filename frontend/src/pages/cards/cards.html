@@ -58,11 +58,47 @@
                     class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-slate-400">
             </div>
 
-            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button id="btn-abrir-exclusao-cartao"
+                    class="px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition border border-rose-200">
+                    <span class="material-symbols-outlined text-sm align-middle mr-1">delete</span> Excluir Cartão
+                </button>
+                <div class="flex justify-end gap-2">
                 <button onclick="window.fecharModalEdicao()"
                     class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
                 <button onclick="window.salvarDadosCartao()"
                     class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Exclusão de Cartão -->
+    <div id="modal-confirmar-exclusao-cartao"
+        class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+                <span class="material-symbols-outlined text-2xl">warning</span>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">Excluir Cartão e Transações</h3>
+                <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                    Tem certeza que deseja excluir o cartão <strong id="nome-cartao-excluir"></strong>?
+                    <br><br>
+                    <span class="text-rose-600 font-semibold">Atenção:</span> Todas as faturas, lançamentos e históricos vinculados a este cartão serão
+                    <strong class="text-rose-600">permanentemente apagados</strong>.
+                </p>
+            </div>
+            <div id="resultado-exclusao-cartao" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-medium"></div>
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button id="btn-cancelar-exclusao-cartao" onclick="window.fecharModalExclusaoCartao()"
+                    class="w-full py-2.5 px-4 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition border border-slate-200">
+                    Cancelar
+                </button>
+                <button id="btn-confirmar-deletar-cartao" onclick="window.executarExclusaoCartao()"
+                    class="w-full py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition shadow-sm">
+                    Sim, excluir tudo
+                </button>
             </div>
         </div>
     </div>
@@ -133,7 +169,7 @@
         </div>
     </div>
 
-    <script type="module" src="./cards.js"></script>
+    <script type="module" src="./cards.js?v=20260906"></script>
 </body>
 
 </html>

@@ -59,6 +59,10 @@ def criar_cartao(payload: CardCreate, service: InvoiceService = Depends(get_serv
 def renomear_cartao(card_id: str, payload: CardUpdate, service: InvoiceService = Depends(get_service)):
     return service.atualizar_cartao(card_id=card_id, payload=payload)
 
+@router.delete("/cards/{card_id}")
+def excluir_cartao(card_id: str, service: InvoiceService = Depends(get_service)):
+    return service.excluir_cartao(card_id=card_id)
+
 @router.get("/pluggy/accounts/{item_id}")
 def buscar_contas_pluggy(item_id: str, service: InvoiceService = Depends(get_service)):
     return service.buscar_cartoes_pluggy_por_item(item_id)
