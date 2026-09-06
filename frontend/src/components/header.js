@@ -139,8 +139,8 @@ export async function renderHeader(activePage = 'invoices') {
         if (iconDrawer) iconDrawer.classList.add('animate-spin');
         if (iconTopbar) iconTopbar.classList.add('animate-spin');
         if (button) button.disabled = true;
-
         if (resultsContainer) resultsContainer.classList.remove('hidden');
+
         if (resultsContent) {
             resultsContent.innerHTML = `<p class="text-slate-500 text-center py-2">Consultando e comparando dados na Pluggy...</p>`;
         }
@@ -148,40 +148,57 @@ export async function renderHeader(activePage = 'invoices') {
         try {
             const data = await apiRequest('/sync', 'POST');
             const totalNovas = data.resumo?.total_novas || 0;
+            const totalAtualizadas = data.resumo?.total_atualizadas || 0;
             const excedente = data.resumo?.excedente_preview || 0;
             const previewList = data.preview_novas_transacoes || [];
 
             if (!resultsContent) return;
-
             let html = '';
-            if (totalNovas > 0) {
-                html += `<p class="font-semibold text-emerald-600 mb-2"> 🎉 ${totalNovas} nova(s) transação(ões) encontrada(s)!</p>`;
-                html += `<div class="space-y-1.5">`;
-                previewList.forEach(tx => {
-                    html += `
-                        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center">
-                            <div class="min-w-0 pr-2">
-                                <p class="font-medium text-slate-800 truncate">${tx.descricao}</p>
-                                <p class="text-[10px] text-slate-400 font-medium">${tx.banco || 'Cartão'} • ${tx.data}</p>
+
+            if (totalNovas > 0 || totalAtualizadas > 0) {
+                let textoResumo = '';
+                if (totalNovas > 0 && totalAtualizadas > 0) {
+                    textoResumo = `${totalNovas} nova(s) e ${totalAtualizadas} atualizada(s) com sucesso!`;
+                } else if (totalNovas > 0) {
+                    textoResumo = `${totalNovas} nova(s) transação(ões) encontrada(s)!`;
+                } else {
+                    textoResumo = `${totalAtualizadas} transação(ões) atualizada(s) no banco!`;
+                }
+
+                html += `<p class="font-semibold text-emerald-600 mb-2">${textoResumo}</p>`;
+
+                if (previewList.length > 0) {
+                    html += `<div class="space-y-1.5">`;
+                    previewList.forEach(tx => {
+                        const atualizada = String(tx.tipo || '').toLowerCase() === 'atualizada';
+                        const badgeTexto = atualizada ? 'Atualizada' : 'Nova';
+                        const badgeStyle = atualizada
+                            ? 'background-color:#fef3c7;color:#b45309;'
+                            : 'background-color:#d1fae5;color:#047857;';
+                        html += `
+                            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center">
+                                <div class="min-w-0 pr-2">
+                                    <p class="font-medium text-slate-800 truncate"><span style="${badgeStyle}display:inline-block;padding:2px 6px;margin-right:6px;border-radius:4px;font-size:9px;line-height:1.2;text-transform:uppercase;letter-spacing:0.04em;vertical-align:middle;">${badgeTexto}</span>${tx.descricao}</p>
+                                    <p class="text-[10px] text-slate-400 font-medium">${tx.banco || 'Cartão'} • ${tx.data}</p>
+                                </div>
+                                <span class="font-semibold text-slate-900 whitespace-nowrap">R$ ${Number(tx.valor).toFixed(2)}</span>
                             </div>
-                            <span class="font-semibold text-slate-900 whitespace-nowrap">R$ ${Number(tx.valor).toFixed(2)}</span>
-                        </div>
-                    `;
-                });
-                html += `</div>`;
+                        `;
+                    });
+                    html += `</div>`;
+                }
+
                 if (excedente > 0) {
                     html += `<p class="text-[11px] text-slate-500 italic mt-2 text-center">...e mais outras ${excedente} encontradas.</p>`;
                 }
             } else {
-                html = `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-center">Nenhum novo dado disponível. Todas as transações já constam no banco.</div>`;
+                html = `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-center">Nenhum dado novo ou atualização disponível.</div>`;
             }
 
             resultsContent.innerHTML = html;
-
             if (typeof window.carregarDados === 'function') await window.carregarDados();
             if (typeof window.carregarCartoes === 'function') await window.carregarCartoes();
             await carregarCartoesMenu();
-
         } catch (err) {
             if (resultsContent) {
                 resultsContent.innerHTML = `
@@ -199,7 +216,7 @@ export async function renderHeader(activePage = 'invoices') {
             }, 500);
         }
     };
-
+    
     await carregarCartoesMenu();
 }
 

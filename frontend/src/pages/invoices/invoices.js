@@ -7,6 +7,18 @@ let resumoCategoriasAtuais = [];
 let bancoFiltro = '';
 let cardIdFiltro = '';
 
+function formatarDataTransacao(data) {
+    if (!data) return 'Data desconhecida';
+
+    const dataTransacao = new Date(data);
+    if (Number.isNaN(dataTransacao.getTime())) return 'Data desconhecida';
+
+    const temHorario = typeof data === 'string' && /T|\s\d{2}:\d{2}/.test(data);
+    return temHorario
+        ? dataTransacao.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+        : dataTransacao.toLocaleDateString('pt-BR');
+}
+
 async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     cardIdFiltro = urlParams.get('card_id') || '';
@@ -95,24 +107,26 @@ function renderTransacoes(transacoes) {
     const container = document.getElementById('lista-transacoes');
     const contador = document.getElementById('contador-itens');
     if (!container) return;
-
     if (contador) contador.innerText = `${transacoes.length} itens`;
-
     if (!transacoes || transacoes.length === 0) {
         container.innerHTML = '<p class="text-center text-slate-400 text-xs py-10">Nenhum lançamento encontrado para esta fatura.</p>';
         return;
     }
-
     container.innerHTML = transacoes.map(tx => {
         const banco = tx.bank_name || tx.card_name || 'Cartão';
         const isInter = banco.toLowerCase().includes('inter');
         const isSantander = banco.toLowerCase().includes('santander');
-
         const bancoBadgeClass = isInter 
             ? 'bg-orange-50 text-orange-600 border-orange-200' 
             : isSantander 
                 ? 'bg-red-50 text-red-600 border-red-200' 
                 : 'bg-slate-100 text-slate-600 border-slate-200';
+
+        // Badge de parcelas (ex: 2/12)
+        const parcelaBadge = (tx.installment_number && tx.total_installments)
+            ? `<span class="text-[9px] px-1.5 py-0.2 rounded border font-semibold bg-slate-100 text-slate-600 border-slate-200">${tx.installment_number}/${tx.total_installments}</span>`
+            : '';
+        const dataTransacao = formatarDataTransacao(tx.date);
 
         return `
             <div class="p-3 border-b border-slate-100 flex justify-between items-center ${tx.is_ignored ? 'opacity-40 bg-slate-50' : ''}">
@@ -121,9 +135,13 @@ function renderTransacoes(transacoes) {
                         <span class="material-symbols-outlined text-base">${tx.is_ignored ? 'visibility_off' : 'visibility'}</span>
                     </button>
                     <div class="truncate">
-                        <p class="text-sm font-medium ${tx.is_ignored ? 'line-through' : ''} truncate">${tx.description}</p>
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <p class="text-sm font-medium ${tx.is_ignored ? 'line-through' : ''} truncate">${tx.description}</p>
+                            ${parcelaBadge}
+                        </div>
                         <div class="flex items-center gap-1.5 mt-0.5">
                             <span class="text-[9px] px-1.5 py-0.2 rounded border font-semibold ${bancoBadgeClass}">${banco}</span>
+                            <span class="text-[10px] text-slate-400">${dataTransacao}</span>
                             <span class="text-[10px] text-slate-400"><span style="color:${tx.category_color}">●</span> ${tx.category_name}</span>
                         </div>
                     </div>
@@ -165,8 +183,11 @@ window.abrirModalCategoria = () => {
                                         <span class="material-symbols-outlined text-base">${tx.is_ignored ? 'visibility_off' : 'visibility'}</span>
                                     </button>
                                     <div class="truncate">
-                                        <p class="font-medium text-slate-800 ${tx.is_ignored ? 'line-through' : ''} truncate">${tx.description}</p>
-                                        <p class="text-[10px] text-slate-400">${new Date(tx.date).toLocaleDateString('pt-BR')} • ${tx.bank_name || tx.card_name}</p>
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <p class="font-medium text-slate-800 ${tx.is_ignored ? 'line-through' : ''} truncate">${tx.description}</p>
+                                            ${(tx.installment_number && tx.total_installments) ? `<span class="text-[9px] px-1.5 py-0.2 rounded border font-semibold bg-slate-100 text-slate-600 border-slate-200">${tx.installment_number}/${tx.total_installments}</span>` : ''}
+                                        </div>
+                                        <p class="text-[10px] text-slate-400">${formatarDataTransacao(tx.date)} • ${tx.bank_name || tx.card_name}</p>
                                     </div>
                                 </div>
                                 <span class="font-semibold ${tx.amount < 0 ? 'text-emerald-600' : 'text-slate-700'} shrink-0">

@@ -61,7 +61,7 @@ class InvoiceService:
             category_name = cat_data.get("description_translated") or cat_data.get("description") or "Outros"
 
             resultado.append(
-                TransactionResponse(
+                    TransactionResponse(
                     id=tx["id"],
                     description=tx["description"],
                     amount=float(tx["amount"]),
@@ -74,7 +74,9 @@ class InvoiceService:
                     category_id=tx.get("category_id"),
                     category_name=category_name,
                     category_color=cat_data.get("color") or "#94a3b8",
-                    is_ignored=tx.get("is_ignored", False)
+                    is_ignored=tx.get("is_ignored", False),
+                    installment_number=tx.get("installment_number"),
+                    total_installments=tx.get("total_installments")
                 )
             )
         return resultado

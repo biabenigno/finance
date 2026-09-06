@@ -4,6 +4,7 @@ from typing import List
 class SyncResumoItem(BaseModel):
     total_consultadas: int
     total_ja_existentes: int
+    total_atualizadas: int
     total_novas: int
     excedente_preview: int
 
@@ -13,6 +14,7 @@ class SyncPreviewItem(BaseModel):
     data: str
     descricao: str
     valor: float
+    tipo: str = "nova"
 
 class SyncResponse(BaseModel):
     status: str

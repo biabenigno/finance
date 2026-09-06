@@ -30,6 +30,8 @@ class TransactionResponse(BaseModel):
     category_name: str
     category_color: str
     is_ignored: bool = False
+    installment_number: Optional[int] = None
+    total_installments: Optional[int] = None
 
 class ToggleIgnoreResponse(BaseModel):
     id: str
