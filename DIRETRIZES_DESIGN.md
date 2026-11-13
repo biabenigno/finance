@@ -61,5 +61,14 @@ Estas variáveis devem ser aplicadas em botões, links, ícones ativos, botões 
   - `--color-error-dark`: `#F28B82` *(Vermelho pálido)*
   - `--color-error-light`: `#D93025` *(Vermelho intenso)*
 
-## 5. Resumo para a Ação de Implementação
-Ao codificar, estruture o CSS primeiramente com as variáveis. Mantenha os eventos e IDs do JS. Aplique classes que tragam os conceitos de `Superfícies` e `Elevações` do Material Design. Transforme a aplicação em uma interface limpa, elegante e funcional baseada nas regras acima.
+## 5. Estados de Carregamento (Loading States) e Feedback Visual
+Para evitar que o usuário pense que a aplicação travou enquanto aguarda o processamento ou carregamento de dados, é **obrigatório** implementar estados de carregamento claros. O Material Design sugere as seguintes abordagens:
+
+- **Skeleton Screens (Esqueletos de Carregamento):** Em vez de apresentar telas em branco durante o carregamento de dados, utilize componentes do tipo *Skeleton* (blocos ou formas geométricas em tons neutros, como `--surface-2`, com uma leve animação de pulso ou brilho contínuo da esquerda para a direita). Eles devem imitar a estrutura do conteúdo que será exibido (como textos, imagens e cards).
+- **Indicadores de Progresso (Spinners/Barras):**
+  - Utilize *Spinners Circulares* (com a `--color-primary-light` / `--color-primary-dark`) para ações específicas e menores, como botões de envio de formulário, onde o ícone ou texto do botão é temporariamente substituído pelo spinner.
+  - Utilize *Barras Lineares* de progresso (indeterminadas) no topo da tela ou no topo de containers de dados ao buscar informações ou navegar de rota.
+- **Transições Suaves:** Os elementos devem entrar e sair do estado de carregamento com transições suaves (fade-in), evitando mudanças bruscas e engasgos visuais na estrutura da página ("layout shifts").
+
+## 6. Resumo para a Ação de Implementação
+Ao codificar, estruture o CSS primeiramente com as variáveis. Mantenha os eventos e IDs do JS. Aplique classes que tragam os conceitos de `Superfícies` e `Elevações` do Material Design. Inclua a lógica visual de "carregando" onde dados assíncronos forem esperados. Transforme a aplicação em uma interface limpa, elegante e funcional baseada nas regras acima.
